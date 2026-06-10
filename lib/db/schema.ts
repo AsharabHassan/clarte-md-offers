@@ -141,6 +141,31 @@ export const orderLookups = pgTable(
   }),
 );
 
+// ---------- winback_offers ----------
+export const winbackOffers = pgTable(
+  'winback_offers',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    token: text('token').notNull().unique(),
+    aiSessionId: uuid('ai_session_id').notNull().references(() => aiSessions.id),
+    customerName: text('customer_name').notNull(),
+    customerPhone: text('customer_phone').notNull(),
+    customerEmail: text('customer_email').notNull(),
+    ghlContactId: text('ghl_contact_id'),
+    status: text('status').notNull().default('created'), // created|opened|converted|expired
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    openedAt: timestamp('opened_at', { withTimezone: true }),
+    orderId: uuid('order_id').references(() => orders.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tokenIdx: index('winback_offers_token_idx').on(t.token),
+    statusIdx: index('winback_offers_status_idx').on(t.status, t.createdAt),
+    sessionIdx: index('winback_offers_session_idx').on(t.aiSessionId),
+  }),
+);
+
 // ---------- type exports ----------
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
@@ -157,3 +182,5 @@ export type Subscriber = typeof subscribers.$inferSelect;
 export type NewSubscriber = typeof subscribers.$inferInsert;
 export type OrderLookup = typeof orderLookups.$inferSelect;
 export type NewOrderLookup = typeof orderLookups.$inferInsert;
+export type WinbackOffer = typeof winbackOffers.$inferSelect;
+export type NewWinbackOffer = typeof winbackOffers.$inferInsert;
