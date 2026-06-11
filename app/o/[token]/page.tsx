@@ -54,6 +54,10 @@ export default async function OfferPage({ params }: { params: Promise<{ token: s
   const { reviews, caseStudies, aggregate } = await getAcneReviews();
   const analysis = (session?.analysisJson ?? null) as Record<string, unknown> | null;
 
+  // Recommended protocol follows the client's AI session concern when we have
+  // it; when the session data is unavailable, default to acne.
+  const recommendedConcern = session?.concern ?? 'acne';
+
   return (
     <OfferClient
       token={offer.token}
@@ -64,6 +68,7 @@ export default async function OfferPage({ params }: { params: Promise<{ token: s
       before={imgs.before}
       after={imgs.after}
       analysis={analysis}
+      recommendedConcern={recommendedConcern}
       reviews={reviews}
       caseStudies={caseStudies}
       aggregate={aggregate}

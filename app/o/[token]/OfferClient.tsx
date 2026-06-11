@@ -30,6 +30,7 @@ interface Props {
   before: string | null;
   after: string | null;
   analysis: Record<string, unknown> | null;
+  recommendedConcern: string;
   reviews: ReviewCard[];
   caseStudies: CaseStudy[];
   aggregate: { avg: number; count: number };
@@ -77,9 +78,11 @@ export function OfferClient(props: Props) {
     }
   }
 
+  // Concerns come from the client's AI scan when available; when the session
+  // data is missing we fall back to the recommended concern (acne).
   const concerns = Array.isArray(props.analysis?.primary_concerns)
     ? (props.analysis!.primary_concerns as string[])
-    : [];
+    : [props.recommendedConcern];
 
   return (
     <section className="funnel-offer">

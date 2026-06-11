@@ -21,10 +21,13 @@ const {
   const selectChain = {
     from: vi.fn(),
     where: vi.fn(),
+    limit: vi.fn(),
   };
   selectChain.from.mockReturnValue(selectChain);
-  // .where() returns a thenable so `await db.select().from().where()` works
+  // .where() / .limit() return a thenable so both
+  // `await db.select().from().where()` and `...where().limit(1)` work.
   selectChain.where.mockReturnValue(Object.assign(Promise.resolve(productsRows), selectChain));
+  selectChain.limit.mockResolvedValue(productsRows);
 
   const db = {
     execute: vi.fn().mockResolvedValue([{ c: 0 }]),
@@ -45,7 +48,7 @@ vi.mock('@/lib/webhooks/payloads', () => ({ buildOrderEventPayload: () => ({}) }
 vi.mock('@/lib/orders/order-number', () => ({ nextOrderNumber: async () => 'CLR-TEST-1' }));
 vi.mock('@/lib/db/client', () => ({
   db,
-  schema: { products: {}, bundles: {}, orders: {}, orderItems: {} },
+  schema: { products: {}, bundles: {}, orders: {}, orderItems: {}, aiSessions: { concern: {} } },
 }));
 
 import { POST } from '@/app/api/winback/order/route';
@@ -65,6 +68,7 @@ beforeEach(() => {
   db.select.mockReturnValue(selectChain);
   selectChain.from.mockReturnValue(selectChain);
   selectChain.where.mockReturnValue(Object.assign(Promise.resolve(productsRows), selectChain));
+  selectChain.limit.mockResolvedValue(productsRows);
   insertChain.values.mockReturnValue(insertChain);
   insertChain.returning.mockResolvedValue([{ id: 'order-1', orderNumber: 'CLR-TEST-1' }]);
   db.insert.mockReturnValue(insertChain);

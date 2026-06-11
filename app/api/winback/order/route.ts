@@ -66,6 +66,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Recommended protocol is derived from the offer's AI session. When that
+  // session (or its concern) is unavailable, default to acne.
+  const [aiSession] = await db
+    .select({ concern: schema.aiSessions.concern })
+    .from(schema.aiSessions)
+    .where(sql`id = ${offer.aiSessionId}`)
+    .limit(1);
+  const recommendedConcern = aiSession?.concern ?? 'acne';
+
   const totals = computeTotals(items);
   const orderNumber = await nextOrderNumber(db);
 
@@ -75,7 +84,7 @@ export async function POST(req: NextRequest) {
       .values({
         orderNumber,
         status: 'pending',
-        concern: 'acne',
+        concern: recommendedConcern,
         sourcePage: 'winback',
         customerName: input.contact.name,
         customerPhone: input.contact.phone,
