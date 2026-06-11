@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         shippingPkr: totals.shipping,
         totalPkr: totals.total,
         bundleInCart: items.some((i) => i.isBundle),
-        usedAiPreview: true,
+        usedAiPreview: Boolean(offer.aiSessionId),
         aiSessionId: offer.aiSessionId,
         clientIpHash: ipHash,
       })

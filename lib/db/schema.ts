@@ -147,7 +147,9 @@ export const winbackOffers = pgTable(
   {
     id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     token: text('token').notNull().unique(),
-    aiSessionId: uuid('ai_session_id').notNull().references(() => aiSessions.id),
+    // Nullable: a win-back offer can exist without an AI session. When absent,
+    // the recommended protocol defaults to acne (see create route / offer page).
+    aiSessionId: uuid('ai_session_id').references(() => aiSessions.id),
     customerName: text('customer_name').notNull(),
     customerPhone: text('customer_phone').notNull(),
     customerEmail: text('customer_email').notNull(),

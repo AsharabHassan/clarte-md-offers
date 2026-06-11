@@ -1,7 +1,21 @@
 import { z } from 'zod';
 
+const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/**
+ * Optional AI session id. A win-back contact may not have one (e.g. they never
+ * ran the scan). Empty strings, whitespace, and unresolved merge tags like
+ * "{{contact.ai_session_id}}" are all coerced to undefined so the offer is
+ * created without a session (recommendation then defaults to acne).
+ */
+const optionalAiSessionId = z.preprocess((v) => {
+  if (typeof v !== 'string') return undefined;
+  const t = v.trim();
+  return UUID_RE.test(t) ? t : undefined;
+}, z.string().uuid().optional());
+
 export const CreateWinbackSchema = z.object({
-  ai_session_id: z.string().uuid(),
+  ai_session_id: optionalAiSessionId,
   name: z.string().min(1).max(120),
   email: z.string().email(),
   phone: z.string().min(7).max(32),

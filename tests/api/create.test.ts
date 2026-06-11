@@ -48,13 +48,23 @@ describe('POST /api/winback/create', () => {
     expect(res.status).toBe(400);
   });
 
-  it('404s when the ai_session is unknown', async () => {
+  it('creates a sessionless offer when the ai_session is unknown', async () => {
     selectChain.limit.mockResolvedValue([]); // not found
+    createOrGetOffer.mockResolvedValue({ token: 'TOK', expiresAt: new Date('2026-06-12T10:00:00Z') });
     const res = await POST(req({ ai_session_id: validUuid, name: 'A', email: 'a@b.com', phone: '03001234' }, 'topsecret') as never);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(createOrGetOffer).toHaveBeenCalledWith(expect.objectContaining({ aiSessionId: null }));
   });
 
-  it('returns a url for a valid request', async () => {
+  it('creates a sessionless offer when ai_session_id is omitted entirely', async () => {
+    createOrGetOffer.mockResolvedValue({ token: 'TOK', expiresAt: new Date('2026-06-12T10:00:00Z') });
+    const res = await POST(req({ name: 'A', email: 'a@b.com', phone: '03001234' }, 'topsecret') as never);
+    expect(res.status).toBe(200);
+    expect(db.select).not.toHaveBeenCalled(); // no session lookup when none supplied
+    expect(createOrGetOffer).toHaveBeenCalledWith(expect.objectContaining({ aiSessionId: null }));
+  });
+
+  it('links the session and returns a url for a valid request', async () => {
     selectChain.limit.mockResolvedValue([{ id: validUuid }]);
     createOrGetOffer.mockResolvedValue({ token: 'TOK', expiresAt: new Date('2026-06-12T10:00:00Z') });
     const res = await POST(req({ ai_session_id: validUuid, name: 'A', email: 'a@b.com', phone: '03001234' }, 'topsecret') as never);
@@ -62,5 +72,6 @@ describe('POST /api/winback/create', () => {
     const json = await res.json();
     expect(json.ok).toBe(true);
     expect(json.url).toBe('https://offer.test/o/TOK');
+    expect(createOrGetOffer).toHaveBeenCalledWith(expect.objectContaining({ aiSessionId: validUuid }));
   });
 });

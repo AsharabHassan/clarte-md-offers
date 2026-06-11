@@ -4,7 +4,7 @@ import type { WinbackOffer } from '@/lib/db/schema';
 import { generateToken } from './token';
 
 export interface CreateOfferArgs {
-  aiSessionId: string;
+  aiSessionId: string | null;
   name: string;
   email: string;
   phone: string;
@@ -13,16 +13,21 @@ export interface CreateOfferArgs {
 }
 
 /**
- * Idempotent: if a non-expired, non-converted offer already exists for the
- * ai_session, return it; otherwise mint a new token + row.
+ * Idempotent: if a non-expired, non-converted offer already exists, return it;
+ * otherwise mint a new token + row. Dedupe key is the ai_session when present,
+ * otherwise the customer email (so sessionless contacts don't get a fresh
+ * offer on every workflow run).
  */
 export async function createOrGetOffer(args: CreateOfferArgs): Promise<WinbackOffer> {
+  const dedupeKey = args.aiSessionId
+    ? eq(schema.winbackOffers.aiSessionId, args.aiSessionId)
+    : and(sql`ai_session_id is null`, eq(schema.winbackOffers.customerEmail, args.email));
   const existing = await db
     .select()
     .from(schema.winbackOffers)
     .where(
       and(
-        eq(schema.winbackOffers.aiSessionId, args.aiSessionId),
+        dedupeKey,
         sql`status <> 'converted'`,
         sql`expires_at > now()`,
       ),

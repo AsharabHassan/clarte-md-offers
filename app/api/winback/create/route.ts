@@ -26,18 +26,22 @@ export async function POST(req: NextRequest) {
   }
   const input = parsed.data;
 
-  const found = await db
-    .select()
-    .from(schema.aiSessions)
-    .where(sql`id = ${input.ai_session_id}`)
-    .limit(1);
-  if (!found.length) {
-    return NextResponse.json({ ok: false, error: 'Unknown ai_session_id' }, { status: 404 });
+  // Link the AI session only when a real one is supplied AND exists. A missing
+  // or unknown session is allowed — the offer is created without one and the
+  // recommended protocol defaults to acne downstream.
+  let aiSessionId: string | null = null;
+  if (input.ai_session_id) {
+    const found = await db
+      .select({ id: schema.aiSessions.id })
+      .from(schema.aiSessions)
+      .where(sql`id = ${input.ai_session_id}`)
+      .limit(1);
+    if (found.length) aiSessionId = input.ai_session_id;
   }
 
   const ttlHours = Number(process.env.OFFER_TTL_HOURS ?? '48');
   const offer = await createOrGetOffer({
-    aiSessionId: input.ai_session_id,
+    aiSessionId,
     name: input.name,
     email: input.email,
     phone: input.phone,

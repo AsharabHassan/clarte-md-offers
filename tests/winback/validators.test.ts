@@ -11,11 +11,21 @@ describe('CreateWinbackSchema', () => {
     expect(r.success).toBe(true);
   });
 
-  it('rejects a non-uuid ai_session_id', () => {
+  it('treats a non-uuid / empty / unresolved ai_session_id as absent (offer still valid)', () => {
+    for (const ai_session_id of ['nope', '', '   ', '{{contact.ai_session_id}}']) {
+      const r = CreateWinbackSchema.safeParse({
+        ai_session_id, name: 'Ayesha', email: 'a@b.com', phone: '03001234567',
+      });
+      expect(r.success).toBe(true);
+      if (r.success) expect(r.data.ai_session_id).toBeUndefined();
+    }
+  });
+
+  it('accepts a payload with no ai_session_id at all', () => {
     const r = CreateWinbackSchema.safeParse({
-      ai_session_id: 'nope', name: 'Ayesha', email: 'a@b.com', phone: '03001234567',
+      name: 'Ayesha', email: 'a@b.com', phone: '03001234567',
     });
-    expect(r.success).toBe(false);
+    expect(r.success).toBe(true);
   });
 
   it('rejects a bad email', () => {
